@@ -40,6 +40,11 @@ function dialogue_settings_page() {
     </select>
     </td>
     </tr>
+
+    <tr valign="top">
+        <th scope="row">OpenAI Default Prompt</th>
+        <td><textarea name="dialogue_default_prompt" rows="5" cols="50"><?php echo esc_textarea(get_option('dialogue_default_prompt')); ?></textarea></td>
+    </tr>
     
     <tr valign="top">
     <th scope="row">Result Background Color</th>
@@ -93,6 +98,7 @@ function dialogue_settings_page() {
 function dialogue_register_settings() {
     register_setting('dialogue-settings-group', 'dialogue_openai_api_key', 'dialogue_validate_openai_api_key');
     register_setting('dialogue-settings-group', 'dialogue_openai_model', 'dialogue_validate_openai_model');
+    register_setting('dialogue-settings-group', 'dialogue_default_prompt', 'sanitize_textarea_field');
     register_setting('dialogue-settings-group', 'dialogue_result_background_color', 'sanitize_hex_color');
     register_setting('dialogue-settings-group', 'dialogue_prompt_background_color', 'sanitize_hex_color');
     register_setting('dialogue-settings-group', 'dialogue_font_color', 'sanitize_hex_color');
@@ -303,12 +309,16 @@ function dialogue_send_message() {
     $chat_history = json_decode(stripslashes($_POST['chat_history']), true);
     $openai_api_key = get_option('dialogue_openai_api_key');
     $openai_model = get_option('dialogue_openai_model');
-    
+    $dialogue_default_prompt = get_option('dialogue_default_prompt');
+    if (!empty($dialogue_default_prompt)) {
+        array_unshift($chat_history, array('role' => 'system', 'content' => $dialogue_default_prompt));
+    }
     $url = 'https://api.openai.com/v1/chat/completions';
     $headers = array(
         'Content-Type' => 'application/json',
         'Authorization' => 'Bearer ' . $openai_api_key
     );
+
     $body = array(
         'model' => $openai_model,
         'messages' => $chat_history
